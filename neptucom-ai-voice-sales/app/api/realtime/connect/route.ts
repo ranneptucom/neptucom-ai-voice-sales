@@ -33,13 +33,17 @@ export async function POST(req: NextRequest) {
   if (typeof sdp !== 'string' || sdp.length < 100 || sdp.length > 60000 || !sdp.startsWith('v=0')) {
     return NextResponse.json({error:'Invalid SDP offer'}, {status:400});
   }
-  const form = new FormData();
-  form.set('sdp', new Blob([sdp], {type:'application/sdp'}), 'offer.sdp');
-  form.set('session', new Blob([JSON.stringify({
-    type:'realtime',
-    model: process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
-    instructions
-  })], {type:'application/json'}), 'session.json');
+  
+const form = new FormData();
+
+form.set('sdp', sdp);
+
+form.set('session', JSON.stringify({
+  type: 'realtime',
+  model: process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
+  instructions
+}));
+
   try {
     const upstream = await fetch('https://api.openai.com/v1/realtime/calls', {
       method:'POST', headers:{Authorization:`Bearer ${apiKey}`}, body:form, cache:'no-store', signal:AbortSignal.timeout(25000)
